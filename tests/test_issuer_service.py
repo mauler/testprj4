@@ -21,3 +21,12 @@ class IssuerServiceTests(TestCase):
 
         # Create account should be called since the account doesn't exists
         self.db_mock.create_account.assert_called()
+
+    def test_load_money_invalid_currency(self):
+        """Tries to load money for a invalid currency. """
+
+        with self.assertRaises(ValueError) as cm:
+            self.service.load_money(self.CARD_ID, 100, 'INVALID_CURRENCY')
+
+        self.assertEqual(cm.exception.args,
+                         ('Currency "INVALID_CURRENCY" not available.', ))

@@ -7,6 +7,14 @@ LOGGER = logging.getLogger(__name__)
 
 class IssuerService:
     def __init__(self, db, currencies):
+        """Instances a new Issuer service.
+
+        :param db: The database bridge.
+        :type db: issuer.db.IssuerDatabase
+
+        :param currencies: List of supported currencies.
+        :type currencies: list
+        """
         self._db = db
         self._currencies = currencies
 
