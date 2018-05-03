@@ -24,7 +24,7 @@ class CardsIssuerDatabaseTests(TestCase):
 
     MERCHANT_NAME = 'Game Store'
     MERCHANT_COUNTRY = 'BR'
-    MERCHAN_MCC = 1234
+    MERCHANT_MCC = 1234
 
     BILLING_AMOUNT = 100
     BILLING_CURRENCY = 'BRL'
@@ -59,7 +59,7 @@ class CardsIssuerDatabaseTests(TestCase):
                 self.TRANSACTION_ID,
                 self.MERCHANT_NAME,
                 self.MERCHANT_COUNTRY,
-                self.MERCHAN_MCC,
+                self.MERCHANT_MCC,
                 self.BILLING_AMOUNT,
                 self.BILLING_CURRENCY,
                 self.TRANSACTION_AMOUNT,
@@ -77,7 +77,7 @@ class CardsIssuerDatabaseTests(TestCase):
             self.TRANSACTION_ID,
             self.MERCHANT_NAME,
             self.MERCHANT_COUNTRY,
-            self.MERCHAN_MCC,
+            self.MERCHANT_MCC,
             self.BILLING_AMOUNT,
             self.BILLING_CURRENCY,
             self.TRANSACTION_AMOUNT,

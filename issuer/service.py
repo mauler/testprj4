@@ -89,8 +89,8 @@ class IssuerService:
         :param billing_amount: Amount to be billed
         :type billing_amount: Decimal
 
-        :param currency: Billing currency code, 3 char long.
-        :type currency: str
+        :param billing_currency: Billing currency code, 3 char long.
+        :type billing_currency: str
 
         :param transaction_amount: Transaction to be billed
         :type transaction_amount: Decimal
