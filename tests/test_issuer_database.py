@@ -20,6 +20,9 @@ class CardsIssuerDatabaseTests(TestCase):
     def test_load_money(self):
         self.issuerdb.load_money(self.CARD_ID, 100, self.CURRENCY)
 
-        self.assertEqual(Account.objects.get(card_id=self.CARD_ID,
-                                             currency=self.CURRENCY).balance,
+        self.assertEqual(Account.objects
+                         .balance()
+                         .get(card_id=self.CARD_ID,
+                              currency=self.CURRENCY)
+                         .balance,
                          100)

@@ -15,3 +15,19 @@ class ModelsTests(TestCase):
         with self.assertRaises(IntegrityError):
             Account.objects.create(card_id='card-brl',
                                    currency='BRL')
+
+    def test_account_balance(self):
+        """Check if the summarize for Account transfers are being calculated
+        properly."""
+        acc = Account.objects.create(card_id='card-brl',
+                                     currency='BRL')
+
+        acc.transfers.create(amount=100, description='Bank Deposit')
+
+        self.assertEqual(
+            Account.objects.filter(pk=acc.id).balance().get().balance, 100)
+
+        acc.transfers.create(amount=-50, description='Money withdraw')
+
+        self.assertEqual(
+            Account.objects.filter(pk=acc.id).balance().get().balance, 50)
