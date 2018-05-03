@@ -15,20 +15,32 @@ class AccountManager(Manager):
     def balance(self, *ar, **kw):
         return self.get_queryset().balance(*ar, **kw)
 
-    def transfers_balance(self, *ar, **kw):
-        return self.get_queryset().transfers_balance(*ar, **kw)
-
 
 class AccountManagerQuerySet(QuerySet):
     """ManagerQuerySet for Account model. """
 
     def balance(self):
         """Summarizes the balance for the Account."""
-        balance = F('transfers_balance') - F('presentments_sum')
+        balance = (F('transfers_balance') -
+                   F('authorisations_sum') -
+                   F('presentments_sum'))
         return (self
                 .transfers_balance()
+                .authorisations_sum()
                 .presentments_sum()
                 .annotate(balance=balance))
+
+    def authorisations_sum(self):
+        """Summarizes the transactions authorisations for the Account."""
+        from cards.accounting.models import Transaction
+        authorisations = (Transaction.objects
+                          .authorisations()
+                          .filter(account=OuterRef('pk')))
+        subquery = Subquery(authorisations.values('billing_amount'),
+                            output_field=DECIMAL_OUTPUT)
+        authorisations_sum = Sum(subquery)
+        return self.annotate(authorisations_sum=Coalesce(authorisations_sum,
+                                                         0))
 
     def presentments_sum(self):
         """Summarizes the transactions presentments for the Account."""

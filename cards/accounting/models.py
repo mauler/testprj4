@@ -98,6 +98,10 @@ class Transaction(models.Model):
     """
     AUTHORISATION = 'a'
     PRESENTMENT = 'p'
+    TRANSACTION_TYPE_CHOICES = (
+        (AUTHORISATION, 'authorisation'),
+        (PRESENTMENT, 'presentment'),
+    )
 
     objects = TransactionManager()
 
@@ -111,7 +115,8 @@ class Transaction(models.Model):
 
     transaction_type = models.CharField(db_index=True,
                                         default=AUTHORISATION,
-                                        max_length=1)
+                                        max_length=1,
+                                        choices=TRANSACTION_TYPE_CHOICES)
 
     merchant_name = models.CharField(max_length=100)
 
@@ -142,3 +147,8 @@ class Transaction(models.Model):
 
     class Meta:
         ordering = ('creation_date', )
+
+    def __str__(self):
+        return '{} => {}'.format(
+            self.transaction_id,
+            self.get_transaction_type_display())

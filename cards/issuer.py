@@ -1,10 +1,25 @@
 from django.conf import settings
-from django.db.models import F
+from django.db import transaction
 
-from cards.accounting.models import Account
+from cards.accounting.models import Account, Transaction
 
-from issuer.db import IssuerDatabase
+from issuer.db import IssuerDatabase, InsufficientFunds, AccountNotFound
 from issuer.service import IssuerService
+
+
+def account_not_found(fn):
+    """Decorates a function, when Account.DoesNotExist is catch
+    and AccountNotFound is raised.
+
+    :raises: AccountNotFound
+    """
+    def decorated(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Account.DoesNotExist:
+            raise AccountNotFound
+
+    return decorated
 
 
 class CardsIssuerDatabase(IssuerDatabase):
@@ -26,6 +41,7 @@ class CardsIssuerDatabase(IssuerDatabase):
         return Account.objects.filter(card_id=card_id,
                                       currency=currency).exists()
 
+    @account_not_found
     def load_money(self, card_id, amount, currency):
         """Increases the balance attribute of a specific Account instance.
 
@@ -38,10 +54,69 @@ class CardsIssuerDatabase(IssuerDatabase):
         :param currency: Currency code, 3 char long.
         :type currency: str
         """
-        if self.account_exists(card_id, currency):
-            (Account.objects
-                .filter(card_id=card_id, currency=currency)
-                .update(balance=F('balance') + amount))
+        acc = Account.objects.get(card_id=card_id, currency=currency)
+        acc.transfers.create(amount=amount,
+                             description='Money loaded from command-line')
+
+    @transaction.atomic
+    @account_not_found
+    def make_authorisation(self, card_id, transaction_id, merchant_name,
+                           merchant_country, merchant_mcc, billing_amount,
+                           billing_currency, transaction_amount,
+                           transaction_currency):
+        """Check if Account has enough balance, if there is creates
+        authorisation record into database. All operations in the same
+        transaction.
+
+        :param card_id: The card unique identification
+        :type card_id: str
+
+        :param transaction_id:  Unique transaction id
+        :type transaction_id: str
+
+        :param merchant_name: Merchant store name.
+        :type merchant_name: str
+
+        :param merchant_country: Merchant country abbreviated.
+        :type merchant_country: str
+
+        :param merchant_mcc: Merchant category code, 4 digits
+        :type merchant_mcc: int
+
+        :param billing_amount: Amount to be billed
+        :type billing_amount: Decimal
+
+        :param billing_currency: Billing currency code, 3 char long.
+        :type billing_currency: str
+
+        :param transaction_amount: Transaction to be billed
+        :type transaction_amount: Decimal
+
+        :param transaction_currency: Transaction currency code, 3 char long.
+        :type transaction_currency: str
+
+        :returns: bool -- If the authorisation was created successfully.
+
+        :raises: InsufficientFunds
+        """
+        acc = (Account.objects
+               .balance()
+               .get(card_id=card_id, currency=billing_currency))
+
+        if acc.balance < billing_amount:
+            raise InsufficientFunds
+
+        else:
+            acc.transactions.create(
+                transaction_id=transaction_id,
+                transaction_type=Transaction.AUTHORISATION,
+                merchant_name=merchant_name,
+                merchant_country=merchant_country,
+                merchant_mcc=merchant_mcc,
+                billing_amount=billing_amount,
+                billing_currency=billing_currency,
+                transaction_amount=transaction_amount,
+                transaction_currency=transaction_currency)
 
 
 service = IssuerService(CardsIssuerDatabase(), settings.CURRENCIES)
