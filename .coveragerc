@@ -1,3 +1,7 @@
 [run]
 omit =
+    cards/settings.py
+    cards/api/urls.py
+    cards/wsgi.py
+    cards/urls.py
     cards/accounting/management/*
