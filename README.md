@@ -1,5 +1,4 @@
 
-
 # Cards Issuer Project
 
 
@@ -30,6 +29,13 @@ This command invokes **pytest** that will discover tests around the project work
 **ATTENTION**: Make sure the dependencies are installed.
 
 
+### Running
+
+
+    make run
+
+This command invokes **migrate** followed by **runserver** django command.
+
 ## Code Architecture
 
 All the code architecture focus in making the code life cycle easier by splitting components to ensure each has it responsibility and business rules strictly declared. This also helps the development focused on unit testing each of them.
@@ -37,12 +43,13 @@ All the code architecture focus in making the code life cycle easier by splittin
 
 ### Package namespacing
 
-- **cards.accounting** — Django application for accounting.
-- **cards.api** — The Endpoints views.
-- **cards.issuer** — Issuer service persistence implemenation.
-
-- **issuer.service** — The issuer service operations used by the Scheme.
-- **issuer.db** — Abstract class for issuer persistence.
+| Package               | Description                                        |
+|-----------------------|----------------------------------------------------|
+| **cards.accounting**  | Django application for accounting.                 |
+| **cards.api**         | The Endpoints views.                               |
+| **cards.issuer**      | Issuer service persistence implemenation.          |
+| **issuer.service**    | The issuer service operations used by the Scheme.  |
+| **issuer.db**         | Abstract class for issuer persistence.             |
 
 
 ### Issuer Service
@@ -79,8 +86,13 @@ This application is a **ALPHA PROTOTYPE** so the concepts may be a little incons
 
 ##### Entities definition:
 
-- **Transaction** — Used for cards transactions, not related to accounting.
-- **Batch** — Is the real accouting transaction, *transfers* are know as **Journal**.
+Some entities have similar responsibilities and naming convention, the project follows this approach:
+
+| Entity      | Description                                                              |
+|-------------|--------------------------------------------------------------------------|
+| Transaction | Used for cards transactions, not related to accounting.                  |
+| Batch       | Is the real accounting transaction, *transfers* are know as **Journal**. |
+
 
 ### Django components
 
@@ -112,11 +124,11 @@ Some items were implemented in an different way than the specification:
 
 ## Presentment and Settlement
 
-### On Presentment the money is moved betweeen accounts
+### On Presentment the money is moved between accounts
 
 There is an account for **Scheme** and another for the **Issuer**, this represents the real money available at the **Issuer** on it hands and what it owns the **Scheme**.
 
-The presentment logic is implemented within **CardsIssuerDatabase** class at **_make_presentment_batch** method.
+The presentment logic is implemented within **CardsIssuerDatabase** class at **make_presentment_batch** method.
 
 ### Settlement daily task not implemented
 
