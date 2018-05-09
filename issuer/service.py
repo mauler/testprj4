@@ -1,7 +1,8 @@
 from decimal import Decimal
 import logging
 
-from issuer.db import InsufficientFunds
+from issuer.db import InsufficientFunds, AuthorisationNotFound
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -141,3 +142,21 @@ class IssuerService:
 
         else:
             return True
+
+    def set_presentment(self, transaction_id, settlement_amount,
+                        settlement_currency):
+        try:
+            LOGGER.debug('Trying to set presentment: {}'
+                         .format(transaction_id))
+            self._db.set_presentment(transaction_id,
+                                     settlement_amount,
+                                     settlement_currency)
+
+        except AuthorisationNotFound as exc:
+            LOGGER.error('Authorisation {} is not available.'
+                         .format(transaction_id))
+            raise exc
+
+        else:
+            LOGGER.info('Authorisation {} set to Presentment'
+                        .format(transaction_id))

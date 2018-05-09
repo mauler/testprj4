@@ -1,6 +1,11 @@
 import abc
 
 
+class AuthorisationNotFound(Exception):
+    """Raises when an Authorisation Transaction isn't available on the
+    database."""
+
+
 class InsufficientFunds(Exception):
     """Raised when an Account doesn't have enough funds."""
 
@@ -79,4 +84,20 @@ class IssuerDatabase(metaclass=abc.ABCMeta):
         :returns: bool -- If the authorisation was created successfully.
 
         :raises: InsufficientFunds
+        """
+
+    def set_presentment(self, transaction_id, settlement_amount,
+                        settlement_currency):
+        """Sets a authorisation transaction to presentment.
+
+        :param transaction_id:  Unique transaction id
+        :type transaction_id: str
+
+        :param settlement_amount: Amount on settlement.
+        :type settlement_amount: Decimal
+
+        :param settlement_currency: Settlement currency code, 3 char long.
+        :type settlement_currency: str
+
+        :raises: AuthorisationNotFound
         """

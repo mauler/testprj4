@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 from unittest import TestCase
 
-from issuer.db import InsufficientFunds
+from issuer.db import InsufficientFunds, AuthorisationNotFound
 from issuer.service import IssuerService
 
 
@@ -76,7 +76,7 @@ class IssuerServiceTests(TestCase):
     def test_make_authorisation_false(self):
         """Tests make authorisation. """
 
-        # Authorisation shuld return InsufficientFunds
+        # Authorisation should return InsufficientFunds
         self.db_mock.make_authorisation.side_effect = InsufficientFunds
 
         # Authorisation for 200 BRL, should return False
@@ -90,3 +90,25 @@ class IssuerServiceTests(TestCase):
             self.BILLING_CURRENCY,
             self.TRANSACTION_AMOUNT,
             self.TRANSACTION_CURRENCY))
+
+    def test_set_presentment_authorisation_not_found(self):
+        """Tests if error is raised when Authorisation doesn't exists. """
+
+        # DB set presentment should return AuthorisationNotFound
+        self.service._db.set_presentment.side_effect = AuthorisationNotFound
+
+        with self.assertRaises(AuthorisationNotFound):
+            self.service.set_presentment('INVALID-TRANSACTION',
+                                         self.BILLING_AMOUNT,
+                                         self.BILLING_CURRENCY)
+
+    def test_set_presentment(self):
+        """Tests normal authorisation to presentment call. """
+
+        self.service.set_presentment(self.CARD_ID,
+                                     self.BILLING_AMOUNT,
+                                     self.BILLING_CURRENCY)
+
+        self.db_mock.set_presentment.assert_called_with(self.CARD_ID,
+                                                        self.BILLING_AMOUNT,
+                                                        self.BILLING_CURRENCY)
