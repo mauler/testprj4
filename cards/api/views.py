@@ -2,9 +2,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 
-from cards.api.serializers import AuthorisationSerializer
+from cards.api.serializers import (AuthorisationSerializer,
+                                   PresentmentSerializer)
 from cards import issuer
-from issuer.db import AccountNotFound
+from issuer.db import AccountNotFound, AuthorisationNotFound
 
 
 class AuthorisationView(APIView):
@@ -34,6 +35,28 @@ class AuthorisationView(APIView):
 
                 else:
                     return Response(status=status.HTTP_403_FORBIDDEN)
+        else:
+            return Response(serializer.errors,
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class PresentmentView(APIView):
+
+    def post(self, request, format=None):
+        serializer = PresentmentSerializer(data=request.data)
+        if serializer.is_valid():
+            data = serializer.data
+            try:
+                issuer.service.set_presentment(
+                    transaction_id=data['transaction_id'],
+                    settlement_amount=data['settlement_amount'],
+                    settlement_currency=data['settlement_currency'])
+
+            except AuthorisationNotFound:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+
+            else:
+                return Response(status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors,
                             status=status.HTTP_400_BAD_REQUEST)

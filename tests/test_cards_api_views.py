@@ -4,11 +4,13 @@ from rest_framework import status
 from rest_framework.test import APITestCase, APIRequestFactory
 
 from cards.accounting.models import Account, Batch
-from cards.api.views import AuthorisationView
+from cards.api.views import AuthorisationView, PresentmentView
+from cards.issuer import CardsIssuerDatabase
 
 
-class AuthorisationTests(APITestCase):
+class BaseViewTests(APITestCase):
     AUTHORISATION_URL = reverse_lazy('authorisation')
+    PRESENTMENT_URL = reverse_lazy('presentment')
 
     CARD_ID = 'CARD123'
     CURRENCY = 'BRL'
@@ -51,7 +53,11 @@ class AuthorisationTests(APITestCase):
 
     def setUp(self):
         self.factory = APIRequestFactory()
-        self.view = AuthorisationView.as_view()
+        self.view = self.view_class.as_view()
+
+
+class AuthorisationTests(BaseViewTests):
+    view_class = AuthorisationView
 
     def test_authorization_400_invalid_params(self):
         # NOTE: This test isn't optimal, it's necessary to test search field
@@ -86,3 +92,55 @@ class AuthorisationTests(APITestCase):
         response = self.view(request)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class PresentmentTests(BaseViewTests):
+    view_class = PresentmentView
+
+    SETTLEMENT_AMOUNT = 95
+    SETTLEMENT_CURRENCY = 'BRL'
+
+    POST_DATA = {
+        'transaction_id': BaseViewTests.TRANSACTION_ID,
+        'settlement_amount': SETTLEMENT_AMOUNT,
+        'settlement_currency': SETTLEMENT_CURRENCY,
+    }
+
+    def _make_authorisation(self):
+        # NOTE: Isn't the place for this
+        CardsIssuerDatabase().make_authorisation(
+            self.CARD_ID,
+            self.TRANSACTION_ID,
+            self.MERCHANT_NAME,
+            self.MERCHANT_COUNTRY,
+            self.MERCHANT_MCC,
+            self.BILLING_AMOUNT,
+            self.BILLING_CURRENCY,
+            self.TRANSACTION_AMOUNT,
+            self.TRANSACTION_CURRENCY)
+
+    def test_presentment_400_invalid_params(self):
+        # NOTE: This test isn't optimal, it's necessary to test search field
+        # behaviour.
+        request = self.factory.post(self.PRESENTMENT_URL,
+                                    {'invalid-fields': 'invalid-values'})
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_presentment_404_authorisation_not_found(self):
+        request = self.factory.post(self.PRESENTMENT_URL, self.POST_DATA)
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_presentment_200_success(self):
+
+        self._create_account
+        self._add_funds()
+        self._make_authorisation()
+
+        request = self.factory.post(self.PRESENTMENT_URL, self.POST_DATA)
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
