@@ -153,6 +153,7 @@ class IssuerService:
                                      settlement_currency)
 
         except AuthorisationNotFound as exc:
+            # Capture log and re-raise Exception
             LOGGER.error('Authorisation {} is not available.'
                          .format(transaction_id))
             raise exc
