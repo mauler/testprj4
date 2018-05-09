@@ -38,7 +38,7 @@ This command invokes **migrate** followed by **runserver** django command.
 
 ## Code Architecture
 
-All the code architecture focus in making the code life cycle easier by splitting components to ensure each has it responsibility and business rules strictly declared. This also helps the development focused on unit testing each of them.
+All the code architecture focus in making the code life cycle easier by splitting components to ensure each has it owns responsibility and business rules strictly declared. This also helps the development of tests focused on unit testing.
 
 
 ### Package namespacing
