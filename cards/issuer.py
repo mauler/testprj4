@@ -59,6 +59,35 @@ class CardsIssuerDatabase(IssuerDatabase):
                                            currency=currency))
         return account
 
+    def _make_presentment_batch(self, transaction):
+        """Creates funds movement for a presentment.
+
+        :param transaction: The transaction instance
+        :type transaction: Transaction
+
+        :returns: The batch created.
+        :rtype: Batch
+        """
+        batch = Batch.objects.create()
+
+        # Debits billing from cardholder account
+        batch.journals.create(account=transaction.account,
+                              amount=transaction.billing_amount * -1)
+
+        # Credits the settlement into Schemer account
+        acc = self._get_scheme_account(transaction.settlement_currency)
+        batch.journals.create(account=acc,
+                              amount=transaction.settlement_amount)
+
+        # Credits profits into Issuer account
+        profits = transaction.billing_amount - transaction.settlement_amount
+
+        acc = self._get_issuer_account(transaction.settlement_currency)
+        batch.journals.create(account=acc,
+                              amount=profits)
+
+        return batch
+
     def _make_transfer(self, debit_account, credit_account, amount):
         """Creates a Batch instance with Tranfer instances connected to
         represent duble check accouting.
@@ -249,6 +278,45 @@ class CardsIssuerDatabase(IssuerDatabase):
                 billing_currency=billing_currency,
                 transaction_amount=transaction_amount,
                 transaction_currency=transaction_currency)
+
+    @transaction.atomic
+    def set_presentment(self, transaction_id, settlement_amount,
+                        settlement_currency):
+        """Tries to retrieve Authorisation Transaction  from the database,
+        raises AuthorisationNotFound is none available.
+
+        :param transaction_id:  Unique transaction id
+        :type transaction_id: str
+
+        :param settlement_amount: Amount on settlement.
+        :type settlement_amount: Decimal
+
+        :param settlement_currency: Settlement currency code, 3 char long.
+        :type settlement_currency: str
+
+        :raises: AuthorisationNotFound
+        """
+        try:
+            tr = Transaction.objects.get(
+                transaction_id=transaction_id,
+                transaction_type=Transaction.AUTHORISATION)
+
+        except Transaction.DoesNotExist:
+            raise AuthorisationNotFound
+
+        tr.transaction_type = Transaction.PRESENTMENT
+        tr.settlement_amount = settlement_amount
+        tr.settlement_currency = settlement_currency
+
+        # Sets transaction to presentment
+        tr.save(update_fields=['transaction_type',
+                               'settlement_currency',
+                               'settlement_amount'])
+
+        # Creates transaction presentment batch in the same database
+        # transaction
+        tr.presentment_batch = self._make_presentment_batch(tr)
+        tr.save(update_fields=['presentment_batch'])
 
 
 service = IssuerService(CardsIssuerDatabase(), settings.CURRENCIES)

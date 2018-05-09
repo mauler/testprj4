@@ -25,7 +25,7 @@ class ModelsTests(TestCase):
         self.acc.journals.create(amount=100, batch=batch)
 
         self.acc.transactions.create(settlement_amount=99,
-                                     transaction_type=Transaction.PRESENTMENT,
+                                     transaction_type=Transaction.AUTHORISATION,
                                      merchant_mcc=0,
                                      billing_amount=99,
                                      transaction_amount=100)
@@ -62,18 +62,3 @@ class ModelsTests(TestCase):
             .get()
             .journals_sum,
             50)
-
-    def test_account_presentments_sum(self):
-        self.acc.transactions.create(settlement_amount=99,
-                                     transaction_type=Transaction.PRESENTMENT,
-                                     merchant_mcc=0,
-                                     billing_amount=99,
-                                     transaction_amount=100)
-
-        self.assertEqual(
-            Account.objects
-            .filter(pk=self.acc.id)
-            .presentments_sum()
-            .get()
-            .presentments_sum,
-            99)
