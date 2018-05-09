@@ -41,6 +41,7 @@ class Batch(TrackerModel):
     """Holds funds debi/credit to represent transfers between accounts. """
     description = models.TextField()
 
+
 class Journal(TrackerModel):
     """Holds debit or credit movement for an account.
 
@@ -74,8 +75,11 @@ class Transaction(TrackerModel):
     """Holds cards transactions. A Transaction can be an authorisation or
     either a presentment.
 
-    :params account: The journal Account
+    :params account: The transaction Account
     :type account: Account
+
+    :params presentment_batch: The accouting funds movement journals batch.
+    :type presentment_batch: Batch
 
     :param transaction_id: Transaction unique ID.
     :type description: str
@@ -124,6 +128,10 @@ class Transaction(TrackerModel):
                                 related_name='transactions',
                                 on_delete=models.SET_NULL,
                                 null=True)
+
+    presentment_batch = models.ForeignKey('Batch',
+                                          on_delete=models.SET_NULL,
+                                          null=True)
 
     transaction_id = models.CharField(db_index=True,
                                       max_length=10)
