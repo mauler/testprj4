@@ -11,11 +11,11 @@ This section doesn't cover environment setup. Just make sure the **python3.6** c
 
 ### Installing dependencies
 
-The dependencies are split in production and development. Install the development depencies using the command:
+The dependencies are split in production and development. Install the development dependencies using the command:
 
     python3.6 -m pip install -r requirements/development.txt
 
-This will install the production dependencies and plus the development packages such as *pytest* and other tools.
+This will install the production dependencies plus the development packages, such as *pytest* and other tools.
 
 
 ### Testing
@@ -24,7 +24,7 @@ You can execute the project tests available on **tests/** folder by invoking Mak
 
     make test
 
-This command invokes **pytest** that will discover tests around the project working folder, execute them and should the code coverage.
+This command invokes **pytest** to discover tests around the project working folder, execute them and show the code coverage.
 
 **ATTENTION**: Make sure the dependencies are installed.
 
@@ -47,7 +47,7 @@ All the code architecture focus in making the code life cycle easier by splittin
 |-----------------------|----------------------------------------------------|
 | **cards.accounting**  | Django application for accounting.                 |
 | **cards.api**         | The Endpoints views.                               |
-| **cards.issuer**      | Issuer service persistence implemenation.          |
+| **cards.issuer**      | Issuer service persistence implementation.         |
 | **issuer.service**    | The issuer service operations used by the Scheme.  |
 | **issuer.db**         | Abstract class for issuer persistence.             |
 
@@ -70,17 +70,17 @@ The issuer service implementation necessary is declared at **issuer/db.py** file
 
 The implementation is done by  **CardsIssuerDatabase** at **cards/issuer.py**, making sure the calls are properly encapsulated to raise the properly exceptions if an error occurs. This implementation also encapsulate *accounting operations* such as:
 
- - Funds transfer around accouts
+ - Funds transfer around accounts
  - Presentment settlement operation: debit and credit (Issuer and Scheme split).
 
 #### The Database Schema
 
 There are 2 contexts implemented:
 
-- Accouting
+- Accounting
 - Cards
 
-There is an ambiguous *thing* related to **CARD_ID**.  On the accouting context makes more sense to call it **ACCOUNT_OWNER** since for example the Issuer and the Scheme doesn't have cards but still have accounts ("balance on some currency").
+There is an ambiguous *thing* related to **CARD_ID**.  On the accounting context makes more sense to call it **ACCOUNT_OWNER** since for example the Issuer and the Scheme doesn't have cards but still have accounts ("balance on some currency").
 
 This application is a **ALPHA PROTOTYPE** so the concepts may be a little inconsistent.
 
@@ -88,10 +88,10 @@ This application is a **ALPHA PROTOTYPE** so the concepts may be a little incons
 
 Some entities have similar responsibilities and naming convention, the project follows this approach:
 
-| Entity      | Description                                                              |
-|-------------|--------------------------------------------------------------------------|
-| Transaction | Used for cards transactions, not related to accounting.                  |
-| Batch       | Is the real accounting transaction, *transfers* are know as **Journal**. |
+| Entity      | Description                                                               |
+|-------------|---------------------------------------------------------------------------|
+| Transaction | Used for cards transactions, not related to accounting.                   |
+| Batch       | Is the real accounting transaction, *transfers* are known as **Journal**. |
 
 
 ### Django components
@@ -108,7 +108,7 @@ They *don't relay* in each other. The **models** are only used by the **CardsIss
 
 #### Api Endpoints
 
-The Scheme webhook endpoints doesn't rely directly on the *models* implemented at **cards.accouting** Django application.
+The Scheme webhook endpoints doesn't rely directly on the *models* implemented at **cards.accounting** Django application.
 
 The views calls directly the *Issuer service* implemented by the python module **issuer.service**.
 
@@ -155,7 +155,7 @@ And at the presentment should be:
 1. Check if the *presentment* was really signed by the issuer service application.
 2. Check if the **Scheme** calls at *presentment endpoint* previously signed this authorisation.
 
-**ATENTION**: Maybe this approach is overthink about the security layer, but would be nice to have
+**ATTENTION**: Maybe this approach is overthink about the security layer, but would be nice to have
 
 ### TODO
 
@@ -175,4 +175,5 @@ Some 'small things' not implemented but it would be cool.
 
 * [ ] Docker image
     * [x] setuptools packaging
+
 
