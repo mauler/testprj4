@@ -22,12 +22,10 @@ class AccountManagerQuerySet(QuerySet):
     def balance(self):
         """Summarizes the balance for the Account."""
         balance = (F('journals_sum') -
-                   F('authorisations_sum') -
-                   F('presentments_sum'))
+                   F('authorisations_sum'))
         return (self
                 .journals_sum()
                 .authorisations_sum()
-                .presentments_sum()
                 .annotate(balance=balance))
 
     def authorisations_sum(self):
@@ -42,21 +40,9 @@ class AccountManagerQuerySet(QuerySet):
         return self.annotate(authorisations_sum=Coalesce(authorisations_sum,
                                                          0))
 
-    def presentments_sum(self):
-        """Summarizes the transactions presentments for the Account."""
-        from cards.accounting.models import Transaction
-        presentments = (Transaction.objects
-                        .presentments()
-                        .filter(account=OuterRef('pk')))
-        subquery = Subquery(presentments.values('settlement_amount'),
-                            output_field=DECIMAL_OUTPUT)
-        presentments_sum = Sum(subquery)
-        return self.annotate(presentments_sum=Coalesce(presentments_sum, 0))
-
     def journals_sum(self):
         """Summarizes the journals for the Account."""
         journals_sum = Sum('journals__amount')
-
         return self.annotate(journals_sum=Coalesce(journals_sum, 0))
 
 
@@ -66,19 +52,12 @@ class TransactionManager(Manager):
     def get_queryset(self):
         return TransactionManagerQuerySet(self.model, using=self._db)
 
-    def presentments(self, *ar, **kw):
-        return self.get_queryset().presentments(*ar, **kw)
-
     def authorisations(self, *ar, **kw):
         return self.get_queryset().authorisations(*ar, **kw)
 
 
 class TransactionManagerQuerySet(QuerySet):
     """ManagerQuerySet for Transaction model. """
-
-    def presentments(self):
-        """Filters presentment transactions."""
-        return self.filter(transaction_type=self.model.PRESENTMENT)
 
     def authorisations(self):
         """Filters presentment transactions."""
