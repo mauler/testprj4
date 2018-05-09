@@ -1,7 +1,7 @@
 from django.db import IntegrityError
 from django.test import TestCase
 
-from cards.accounting.models import Account, Transaction
+from cards.accounting.models import Account, Transaction, Batch
 
 
 class ModelsTests(TestCase):
@@ -20,7 +20,10 @@ class ModelsTests(TestCase):
     def test_account_balance(self):
         """Calculates the final balance based on tranasfers balance minus
         setlements sum."""
-        self.acc.transfers.create(amount=100, description='Bank Deposit')
+        batch = Batch.objects.create(description='Bank Deposit')
+
+        self.acc.journals.create(amount=100, batch=batch)
+
         self.acc.transactions.create(settlement_amount=99,
                                      transaction_type=Transaction.PRESENTMENT,
                                      merchant_mcc=0,
@@ -35,27 +38,29 @@ class ModelsTests(TestCase):
             .balance,
             1)
 
-    def test_account_transfers_balance(self):
-        """Check if the summarize for Account transfers are being calculated
+    def test_account_journals_sum(self):
+        """Check if the summarize for Account journals are being calculated
         properly."""
-        self.acc.transfers.create(amount=100, description='Bank Deposit')
+        batch = Batch.objects.create(description='Bank Deposit')
+
+        self.acc.journals.create(amount=100, batch=batch)
 
         self.assertEqual(
             Account.objects
             .filter(pk=self.acc.id)
-            .transfers_balance()
+            .journals_sum()
             .get()
-            .transfers_balance,
+            .journals_sum,
             100)
 
-        self.acc.transfers.create(amount=-50, description='Money withdraw')
+        self.acc.journals.create(amount=-50, batch=batch)
 
         self.assertEqual(
             Account.objects
             .filter(pk=self.acc.id)
-            .transfers_balance()
+            .journals_sum()
             .get()
-            .transfers_balance,
+            .journals_sum,
             50)
 
     def test_account_presentments_sum(self):

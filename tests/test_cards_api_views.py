@@ -3,7 +3,7 @@ from django.urls import reverse_lazy
 from rest_framework import status
 from rest_framework.test import APITestCase, APIRequestFactory
 
-from cards.accounting.models import Account
+from cards.accounting.models import Account, Batch
 from cards.api.views import AuthorisationView
 
 
@@ -45,7 +45,9 @@ class AuthorisationTests(APITestCase):
         acc, nil = Account.objects.get_or_create(
             card_id=self.CARD_ID,
             currency=self.BILLING_CURRENCY)
-        acc.transfers.create(amount=amount)
+
+        # Here we are loading funds into account in the wrong way.
+        acc.journals.create(amount=amount, batch=Batch.objects.create())
 
     def setUp(self):
         self.factory = APIRequestFactory()
@@ -75,7 +77,6 @@ class AuthorisationTests(APITestCase):
         response = self.view(request)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
 
     def test_authorization_403_no_funds(self):
 

@@ -3,6 +3,17 @@ from django.db import models
 from cards.accounting.managers import AccountManager, TransactionManager
 
 
+class TrackerModel(models.Model):
+    """Base model to Track creation and modificaiton dates. """
+
+    creation_date = models.DateTimeField(auto_now_add=True)
+
+    modification_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
 class Account(models.Model):
     """Holds account/card balance for a specific currency. An Account it's
     unique based on card_id and currency.
@@ -26,40 +37,44 @@ class Account(models.Model):
         unique_together = ('card_id', 'currency')
 
 
-class Transfer(models.Model):
-    """Holds generic transfer to an Account debit or credit.
-
-    :params account: The transfer Account
-    :type account: Account
-
-    :param description: Generic description of the transfer
-    :type description: str
-
-    :param amount: The amount, raw value to be summarized as balance.
-    :type amount: Decimal
-    """
-    account = models.ForeignKey('Account',
-                                related_name='transfers',
-                                on_delete=models.CASCADE)
-
+class Batch(TrackerModel):
+    """Holds funds debi/credit to represent transfers between accounts. """
     description = models.TextField()
 
-    amount = models.DecimalField(max_digits=9,
-                                 decimal_places=2)
+class Journal(TrackerModel):
+    """Holds debit or credit movement for an account.
 
-    creation_date = models.DateTimeField(auto_now_add=True)
+    :params batch: The journal Batch batch
+    :type account: Batch
 
-    modification_date = models.DateTimeField(auto_now=True)
+    :params debit_account: The Account being debited.
+    :type debit_account: Account
+
+    :params credit_amount: The Account being credited.
+    :type credit_amount: Account
+
+    :param amount: The journal amount.
+    :type amount: Decimal
+    """
+    batch = models.ForeignKey('Batch',
+                              related_name='journals',
+                              on_delete=models.CASCADE)
+
+    account = models.ForeignKey('Account',
+                                related_name='journals',
+                                on_delete=models.CASCADE)
+
+    amount = models.DecimalField(max_digits=9, decimal_places=2)
 
     class Meta:
         ordering = ('creation_date', )
 
 
-class Transaction(models.Model):
+class Transaction(TrackerModel):
     """Holds cards transactions. A Transaction can be an authorisation or
     either a presentment.
 
-    :params account: The transfer Account
+    :params account: The journal Account
     :type account: Account
 
     :param transaction_id: Transaction unique ID.
@@ -140,10 +155,6 @@ class Transaction(models.Model):
 
     settlement_currency = models.CharField(max_length=3,
                                            null=True)
-
-    creation_date = models.DateTimeField(auto_now_add=True)
-
-    modification_date = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ('creation_date', )

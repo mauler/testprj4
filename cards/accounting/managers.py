@@ -21,11 +21,11 @@ class AccountManagerQuerySet(QuerySet):
 
     def balance(self):
         """Summarizes the balance for the Account."""
-        balance = (F('transfers_balance') -
+        balance = (F('journals_sum') -
                    F('authorisations_sum') -
                    F('presentments_sum'))
         return (self
-                .transfers_balance()
+                .journals_sum()
                 .authorisations_sum()
                 .presentments_sum()
                 .annotate(balance=balance))
@@ -53,10 +53,11 @@ class AccountManagerQuerySet(QuerySet):
         presentments_sum = Sum(subquery)
         return self.annotate(presentments_sum=Coalesce(presentments_sum, 0))
 
-    def transfers_balance(self):
-        """Summarizes the transfers for the Account."""
-        return self.annotate(
-            transfers_balance=Coalesce(Sum('transfers__amount'), 0))
+    def journals_sum(self):
+        """Summarizes the journals for the Account."""
+        journals_sum = Sum('journals__amount')
+
+        return self.annotate(journals_sum=Coalesce(journals_sum, 0))
 
 
 class TransactionManager(Manager):

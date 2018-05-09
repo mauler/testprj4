@@ -1,9 +1,10 @@
 from django.conf import settings
 from django.db import transaction
 
-from cards.accounting.models import Account, Transaction
+from cards.accounting.models import Account, Transaction, Batch
 
-from issuer.db import IssuerDatabase, InsufficientFunds, AccountNotFound
+from issuer.db import (IssuerDatabase, InsufficientFunds, AccountNotFound,
+                       AuthorisationNotFound, )
 from issuer.service import IssuerService
 
 
@@ -23,6 +24,65 @@ def account_not_found(fn):
 
 
 class CardsIssuerDatabase(IssuerDatabase):
+    ISSUER_CARD_ID = '__ISSUER_CARD_ID__'
+    SCHEME_CARD_ID = '__SCHEME_CARD_ID__'
+
+    def _get_issuer_account(self, currency):
+        """Returns the Issuer account for a specific currency..
+
+        :param card_id: The card unique identification
+        :type card_id: str
+
+        :param currency: Currency code, 3 char long.
+        :type currency: str
+        """
+
+        # Tries to create the Account if it doesn't exists.
+        account, created = (Account.objects
+                            .get_or_create(card_id=self.ISSUER_CARD_ID,
+                                           currency=currency))
+        return account
+
+    def _get_scheme_account(self, currency):
+        """Returns the Scheme account for a specific currency..
+
+        :param card_id: The card unique identification
+        :type card_id: str
+
+        :param currency: Currency code, 3 char long.
+        :type currency: str
+        """
+
+        # Tries to create the Account if it doesn't exists.
+        account, created = (Account.objects
+                            .get_or_create(card_id=self.SCHEME_CARD_ID,
+                                           currency=currency))
+        return account
+
+    def _make_transfer(self, debit_account, credit_account, amount):
+        """Creates a Batch instance with Tranfer instances connected to
+        represent duble check accouting.
+
+        :param debit_account: The debit account
+        :type debit_account: Account
+
+        :param credit_account: The credit account
+        :type credit_account: Account
+
+        :param amount: The batch journal account
+        :type amount: Decimal
+
+        """
+        batch = Batch.objects.create()
+
+        # Double entry
+        batch.journals.create(account=debit_account,
+                              amount=amount * -1)
+
+        batch.journals.create(account=credit_account,
+                              amount=amount)
+
+        return batch
 
     def _create_transaction(self, card_id, transaction_id, transaction_type,
                             merchant_name, merchant_country, merchant_mcc,
@@ -127,8 +187,10 @@ class CardsIssuerDatabase(IssuerDatabase):
         :type currency: str
         """
         acc = Account.objects.get(card_id=card_id, currency=currency)
-        acc.transfers.create(amount=amount,
-                             description='Money loaded from command-line')
+        issuer_acc = self._get_issuer_account(currency)
+
+        # Make funds transfer between accounts
+        self._make_transfer(issuer_acc, acc, amount)
 
     @transaction.atomic
     @account_not_found
